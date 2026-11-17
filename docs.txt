@@ -1,0 +1,11 @@
+curso: https://www.youtube.com/watch?v=_ZyX4Vcofek
+
+
+nest generate (ou apenas g) resource [name ou vazio] - cria um modulo completo com dto, entidade, controller, module e service e ja adiciona no main.ts para funcioar a rota automaticamente
+
+mas posso usar:
+
+nest nest generate (ou apenas g) controller || module || service [name ou vazio] - para criar apenas o arquivo determinado ja integrando 
+
+obs: caso a pasta exista cria dentro da pasta senão cria a pasta e o arquivo
+ex: nest g controller users -> src/users/users.controller.ts
