@@ -331,3 +331,51 @@ ex: nest g controller users -> src/users/users.controller.ts
 
 20 - nas rotas que precisar no arquivo controller que precisar de autenticação
     20.1 - adicione o decorator @UseGuards(AuthGuard) no arquivo user.controller.ts e outros que precisar
+
+21 - vamos criar a tabela Post
+    21.1 - atualizar o arquivo schema.prisma
+        generator client {
+            provider = "prisma-client"
+            output   = "../src/generated/prisma"
+        }
+
+        datasource db {
+            provider = "postgresql"
+        }
+
+        enum Role {
+            ADMIN
+            EDITOR
+            WRITER
+            READER
+        }
+
+        model User {
+            id        String   @id @default(cuid())
+            name      String
+            email     String   @unique
+            password  String
+            role      Role     @default(READER)
+            createdAt DateTime @default(now())
+            updatedAt DateTime @updatedAt
+            posts     Post[] // ao formatar o codigo é adicionado automaticamente
+        }
+
+        model Post {
+            id        String   @id @default(cuid())
+            title     String
+            content   String   @db.Text
+            published Boolean  @default(false)
+            authorId  String
+            author    User     @relation(fields: [authorId], references: [id]) //se essa linha der erro formate o codigo
+            createdAt DateTime @default(now())
+            updatedAt DateTime @updatedAt
+        }
+
+    21.2 - comando: npx prisma migrate dev
+
+22 - criar o modulo de posts
+    22.1 - comando: nest g resource posts 
+
+
+
