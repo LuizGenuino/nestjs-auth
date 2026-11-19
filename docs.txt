@@ -54,26 +54,22 @@ ex: nest g controller users -> src/users/users.controller.ts
 
 5 - comando: npx prisma generate
 
-6 - configurar o nestjs config
-    6.1 comando: npm install @nestjs/config 
-    6.2 add em app.module.ts  imports: [ConfigModule.forRoot({ isGlobal: true })],
 
-7 - criar o modulo e o service do prisma para integrar ao nest
-    7.1 - comando: nest g module prisma
-    7.2 - comando: nest g service prisma   
+6 - criar o modulo e o service do prisma para integrar ao nest
+    6.1 - comando: nest g module prisma
+    6.2 - comando: nest g service prisma   
 
-8 - iniciar a conexao da api com o banco no arquivo prisma/prisma.service.ts
-    8.1 - implementar o OnModuleInit para iniciar a conexão quando a api iniciar
+7 - iniciar a conexao da api com o banco no arquivo prisma/prisma.service.ts
+    7.1 - implementar o OnModuleInit para iniciar a conexão quando a api iniciar
         import { Injectable, OnModuleInit } from '@nestjs/common';
         import { PrismaClient } from '../generated/prisma/client.js';
-        import { ConfigService } from '@nestjs/config';
         import { PrismaPg } from '@prisma/adapter-pg';
 
 
         @Injectable()
         export class PrismaService extends PrismaClient implements OnModuleInit {
 
-            constructor(configService: ConfigService) {
+            constructor() {
                 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
                 const prisma = new PrismaClient({ adapter })
                 super({
@@ -87,8 +83,8 @@ ex: nest g controller users -> src/users/users.controller.ts
             }
         }
 
-9 - torna o PrismaService visivel para outros modulos
-    9.1 - acessa o prisma.module.ts e adiciona export e o decorator Global()
+8 - torna o PrismaService visivel para outros modulos
+    8.1 - acessa o prisma.module.ts e adiciona export e o decorator Global()
         import { Global, Module } from '@nestjs/common';
         import { PrismaService } from './prisma.service.js';
 
