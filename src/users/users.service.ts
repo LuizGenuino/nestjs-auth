@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import brcypt from 'bcrypt';
+import * as bcrypt from 'bcrypt'
 
 @Injectable()
 export class UsersService {
@@ -14,7 +14,7 @@ export class UsersService {
         data: {
             name: createUserDto.name,
             email: createUserDto.email,
-            password: brcypt.hashSync(createUserDto.password, 10),
+            password: bcrypt.hashSync(createUserDto.password, 10),
             role: createUserDto.role,
         },
     });
