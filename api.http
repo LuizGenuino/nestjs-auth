@@ -1,7 +1,4 @@
 ###
-GET http://localhost:3000/users
-
-###
 POST http://localhost:3000/users
 Content-Type: application/json
 
@@ -11,3 +8,19 @@ Content-Type: application/json
     "password": "123456",
     "role": "READER"
 }
+
+###
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+    "email": "reader@example.com",
+    "password": "123456"
+}
+
+###
+GET http://localhost:3000/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtd255azk4NTAwMDA1OGNzanZpNzI3MHIiLCJyb2xlIjoiUkVBREVSIiwibmFtZSI6IlVzZXIgUmVhZGVyIiwiZW1haWwiOiJyZWFkZXJAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTUxMjA5NTcsImV4cCI6MTc5NTEyODE1N30.kbKJV7ZC6XhwcubGz9G3EjtuhkXLOYBaciGQJzxHuGE
+
+###
+GET http://localhost:3000/users/cmwnyk985000058csjvi7270r

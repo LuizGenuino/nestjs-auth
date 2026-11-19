@@ -180,4 +180,154 @@ ex: nest g controller users -> src/users/users.controller.ts
     }
     }
 
+13 - criar modulo de autenticação
+ 13.1 - comando: nest g module auth  
+ 13.2 - comando: nest g controller auth
+ 13.3 - comando: nest g service auth
+ 13.3 - comando: npm install @nestjs/jwt
 
+14 - importa a lib de token jwt no modulo de auth para poder usar
+    14.1 - auth.module.ts
+        import { Module } from '@nestjs/common';
+        import { AuthController } from './auth.controller.js';
+        import { AuthService } from './auth.service.js';
+        import { JwtModule } from '@nestjs/jwt';
+
+        @Module({
+        imports: [JwtModule.register({
+            global: true, // torna o modulo global para outros modulos usar
+            secret: 'secret', // -> um sistema real deve ser um hash complexo
+            signOptions: {expiresIn: '2h', algorithm: 'HS256'} //adicionar o algoritmo pode evitar alguns ataques
+        })],
+        controllers: [AuthController],
+        providers: [AuthService]
+        })
+        export class AuthModule {}
+
+    
+15 - criar o dto de login
+    15.1 - crie o arquivo login.dto.ts
+        export class LoginDto {
+            email: string
+            password: string
+        }   
+
+16 - cria o serviço de login com jwtService e prismaService
+    16.1 - abre o arquivo auth.service.ts
+        import { Injectable } from '@nestjs/common';
+        import { LoginDto } from './login.dto.js';
+        import { JwtService } from '@nestjs/jwt';
+        import { PrismaService } from '../prisma/prisma.service.js';
+        import * as bcrypt from 'bcrypt'
+
+        @Injectable()
+        export class AuthService {
+
+            constructor(private jwtService: JwtService, private prismaService: PrismaService) { }
+
+            async login(loginDto: LoginDto) {
+                const user = await this.prismaService.user.findUnique({
+                    where: { email: loginDto.email }
+                })
+
+                if (!user) {
+                    throw new Error("Invalid Credentials")
+                }
+
+                const isPasswordValid = bcrypt.compareSync(loginDto.password, user.password)
+
+                if (!isPasswordValid) {
+                    throw new Error("Invalid Credentials")
+                }
+
+                const token = this.jwtService.sign({
+                    sub: user.id, role: user.role, name: user.name, email: user.email
+                })
+
+                return { access_token: token }
+            }
+        }
+
+
+17 - cria a rota de login implementando o AuthService
+    17.1 - abre o arquivo auth.controller
+        import { Body, Controller, Post } from '@nestjs/common';
+        import { LoginDto } from './login.dto.js';
+        import { AuthService } from './auth.service.js';
+
+        @Controller('auth')
+        export class AuthController {
+
+            constructor(private readonly authService: AuthService){}
+
+            @Post('login')
+            login(@Body() loginDto: LoginDto) {
+                return this.authService.login(loginDto)
+            }
+
+        }
+
+18 - vamos adicionar um guardião para interceptar algumas requisições para validar o acesso
+    18.1 - nest g guard auth
+    18.2 - acessa o arquivo auth.guard.ts
+    import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+    import { JwtService } from '@nestjs/jwt';
+    import { Request } from 'express';
+    import { PrismaService } from '../prisma/prisma.service.js';
+
+    @Injectable()
+    export class AuthGuard implements CanActivate {
+
+        constructor(private jwtService: JwtService, private prismaService: PrismaService) { }
+
+        async canActivate(
+            context: ExecutionContext,
+        ): Promise<boolean> {
+
+            const request: Request = context.switchToHttp().getRequest();
+            const token = request.headers['authorization']?.split(" ")[1] // o ? valida se o dado existe antes prosseguir; split(" ") separa a string em um array em cada espaço; [1] pego a segunda posição do array
+
+            if (!token) {
+                throw new UnauthorizedException('No token provided')
+            }
+
+            try {
+                const payload = this.jwtService.verify<{
+                    sub: string, role: string, name: string, email: string
+                }>(token, { algorithms: ['HS256'] })
+
+                const user = await this.prismaService.user.findUnique({
+                    where: { id: payload.sub }
+                })
+
+                if(!user){
+                    throw new UnauthorizedException("User not found")
+                }
+
+                request.user = user
+
+                return true
+            } catch (e) {
+                console.error(e)
+                throw new UnauthorizedException('Invalid token', { cause: e })
+            }
+
+            return true;
+        }
+    }
+
+19 - adiciona o type user na request
+    19.1 - cria as pastas e o arquivo src/@types/express/index.d.ts
+        import type { User } from "../../generated/prisma/client.ts";
+        import type * as express from 'express'
+
+        declare global {
+            namespace Express {
+                export interface Request {
+                    user?: User
+                }
+            }
+        }
+
+20 - nas rotas que precisar no arquivo controller que precisar de autenticação
+    20.1 - adicione o decorator @UseGuards(AuthGuard) no arquivo user.controller.ts e outros que precisar
