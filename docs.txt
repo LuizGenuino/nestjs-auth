@@ -95,3 +95,32 @@ ex: nest g controller users -> src/users/users.controller.ts
         })
         export class PrismaModule {}
 
+9 - cria o tipo de dados a ser recebido do client e passado pela api para o banco de dados na pasta dto
+    9.1 - seleciona o arquivo ja criado pelo generate. Ex: create-user.dto.ts
+        import { Role } from "../../generated/prisma/enums.js";
+
+        export class CreateUserDto {
+            name: string;
+            email: string;
+            password: string;
+            role: Role;
+        }
+
+10 - adiciona a lib bcrypt para criptografar a senha antes de salvar
+    10.1 rode o comando: npm install bcrypt --save
+    10.2 rode o comando: npm install @types/bcrypt --save-dev
+
+11 - adiciona a função de salvar usuario em users.services.ts com a senha criptografada
+    11.1 - import brcypt from 'bcrypt';
+    11.2 - constructor(private prismaService: PrismaService) {}
+    11.3 - create(createUserDto: CreateUserDto) {
+    return this.prismaService.user.create({
+        data: {
+            name: createUserDto.name,
+            email: createUserDto.email,
+            password: brcypt.hashSync(createUserDto.password, 10),
+            role: createUserDto.role,
+        },
+    });
+  }  
+
