@@ -9,3 +9,93 @@ nest nest generate (ou apenas g) controller || module || service [name ou vazio]
 
 obs: caso a pasta exista cria dentro da pasta senão cria a pasta e o arquivo
 ex: nest g controller users -> src/users/users.controller.ts
+
+
+--- conectando com o banco de dados ----
+1 - criar o container docker para rodar o banco de dados
+    1.1 criar o arquivo docker-compose.yaml
+    1.2 add o codigo de criação
+        services:
+            db:
+                image: postgres:latest
+                environment:
+                POSTGRES_USER: postgres
+                POSTGRES_PASSWORD: postgres
+                POSTGRES_DB: nest_auth_db
+                ports:
+                - "5432:5432"
+    1.3 rodar o comando docker-compose up
+
+2 - instalar o prisma seguindo a documentação do nest e iniciar 
+    2.1 - comando: npm install prisma@7 dotenv --save-dev    
+    2.2 - comando: npx prisma init --datasource-provider postgresql --output ../src/generated/prisma   
+    2.3 - comando: npx @prisma/client  
+
+3 - criar o model das tabela do banco no arquivo prisma/schema.prisma
+    enum Role {
+    ADMIN
+    EDITOR
+    WRITER
+    READER
+    }
+
+    model User {
+    id        String   @id @default(cuid())
+    name      String
+    email     String   @unique
+    password  String
+    role      Role     @default(READER)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    }
+
+4 - criar a migração das tabelas criadas
+ 4.1 comando: npx prisma migrate dev
+
+5 - comando: npx prisma generate
+
+6 - configurar o nestjs config
+    6.1 comando: npm install @nestjs/config 
+    6.2 add em app.module.ts  imports: [ConfigModule.forRoot({ isGlobal: true })],
+
+7 - criar o modulo e o service do prisma para integrar ao nest
+    7.1 - comando: nest g module prisma
+    7.2 - comando: nest g service prisma   
+
+8 - iniciar a conexao da api com o banco no arquivo prisma/prisma.service.ts
+    8.1 - implementar o OnModuleInit para iniciar a conexão quando a api iniciar
+        import { Injectable, OnModuleInit } from '@nestjs/common';
+        import { PrismaClient } from '../generated/prisma/client.js';
+        import { ConfigService } from '@nestjs/config';
+        import { PrismaPg } from '@prisma/adapter-pg';
+
+
+        @Injectable()
+        export class PrismaService extends PrismaClient implements OnModuleInit {
+
+            constructor(configService: ConfigService) {
+                const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+                const prisma = new PrismaClient({ adapter })
+                super({
+                    adapter,
+                    log: ['query', 'info', 'warn', 'error'],
+                });
+            }
+
+            async onModuleInit() {
+                await this.$connect();
+            }
+        }
+
+9 - torna o PrismaService visivel para outros modulos
+    9.1 - acessa o prisma.module.ts e adiciona export e o decorator Global()
+        import { Global, Module } from '@nestjs/common';
+        import { PrismaService } from './prisma.service.js';
+
+        @Global()
+        @Module({
+        providers: [PrismaService],
+        exports: [PrismaService],
+        })
+        export class PrismaModule {}
+
