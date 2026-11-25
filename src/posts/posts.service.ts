@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -18,7 +18,7 @@ export class PostsService {
         const ability = this.abilityService.ability
 
         if (!ability.can('create', 'Post')) {
-            throw new Error('Anauthorized')
+            throw new ForbiddenException('Anauthorized')
         }
 
         return this.prismaService.post.create({

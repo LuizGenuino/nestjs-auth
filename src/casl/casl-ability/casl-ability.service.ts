@@ -46,6 +46,7 @@ const rolePermissionsMap: Record<Role, DefinePermissions> = {
 // modelo de autorização
 // rbac - role based access control
 // abac - attribute based access control
+// acl - action control list (s3)
 
 
 @Injectable({ scope: Scope.REQUEST }) // Esse serviço vai ser gerado uma instancia por requisição

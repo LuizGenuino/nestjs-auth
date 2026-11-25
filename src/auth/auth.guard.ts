@@ -8,7 +8,7 @@ import { CaslAbilityService } from '../casl/casl-ability/casl-ability.service.js
 export class AuthGuard implements CanActivate {
 
     constructor(
-        private jwtService: JwtService, 
+        private jwtService: JwtService,
         private prismaService: PrismaService,
         private abilityService: CaslAbilityService
     ) { }
@@ -26,14 +26,18 @@ export class AuthGuard implements CanActivate {
 
         try {
             const payload = this.jwtService.verify<{
-                sub: string, role: string, name: string, email: string
+                sub: string,
+                role: string,
+                name: string,
+                email: string,
+                permissions: string[]
             }>(token, { algorithms: ['HS256'] })
 
             const user = await this.prismaService.user.findUnique({
                 where: { id: payload.sub }
             })
 
-            if(!user){
+            if (!user) {
                 throw new UnauthorizedException("User not found")
             }
 
