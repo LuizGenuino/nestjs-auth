@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -14,12 +14,6 @@ export class UsersService {
     ) { }
 
     create(createUserDto: CreateUserDto) {
-        const ability = this.abilityService.ability
-
-        if (!ability.can('create', 'User')) {
-            throw new Error('Anauthorized')
-        }
-
         return this.prismaService.user.create({
             data: {
                 name: createUserDto.name,
@@ -34,7 +28,7 @@ export class UsersService {
         const ability = this.abilityService.ability
 
         if (!ability.can('read', 'User')) {
-            throw new Error('Anauthorized')
+            throw new ForbiddenException('Anauthorized')
         }
         return this.prismaService.user.findMany();
     }
@@ -43,7 +37,7 @@ export class UsersService {
         const ability = this.abilityService.ability
 
         if (!ability.can('read', 'User')) {
-            throw new Error('Anauthorized')
+            throw new ForbiddenException('Anauthorized')
         }
 
         return this.prismaService.user.findUnique({
@@ -55,7 +49,7 @@ export class UsersService {
         const ability = this.abilityService.ability
 
         if (!ability.can('update', 'User')) {
-            throw new Error('Anauthorized')
+            throw new ForbiddenException('Anauthorized')
         }
 
         return this.prismaService.user.update({
@@ -68,7 +62,7 @@ export class UsersService {
         const ability = this.abilityService.ability
 
         if (!ability.can('delete', 'User')) {
-            throw new Error('Anauthorized')
+            throw new ForbiddenException('Anauthorized')
         }
 
         return this.prismaService.user.delete({

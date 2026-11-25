@@ -385,55 +385,75 @@ ex: nest g controller users -> src/users/users.controller.ts
     23.2 - nest g module casl   
     23.3 - nest g service casl/casl-ability   
 
-24 - configura o casl
+24 - configura o casl utilizando o modelo de autorização ABAC
     24.1 - adiciona o codigo em casl-ability.service.ts
         import { Injectable, Scope } from '@nestjs/common';
         import { Post, Role, User } from '../../generated/prisma/client.js';
         import { Ability, AbilityBuilder } from '@casl/ability';
-        import { createPrismaAbility, Subjects } from '@casl/prisma';
+        import { createPrismaAbility, PrismaQuery, Subjects } from '@casl/prisma';
 
         export type PermActions = 'manage' | 'create' | 'read' | 'update' | 'delete';
 
-        export type PermissionResource = Subjects<{ User: User; Post: Post }> | 'all';
+        export type PermissionResource =
+            | Subjects<{
+                User: User;
+                Post: Post;
+            }>
+            | 'all';
 
-        export type AppAbility = Ability<[PermActions, PermissionResource]>
+        // Na v7, usa-se Ability no lugar de PureAbility
+        export type AppAbility = Ability<
+            [PermActions, PermissionResource],
+            PrismaQuery
+        >;
 
         export type DefinePermissions = (
             user: User,
-            builder: AbilityBuilder<AppAbility>
-        ) => void
+            builder: AbilityBuilder<AppAbility>,
+        ) => void;
 
         const rolePermissionsMap: Record<Role, DefinePermissions> = {
             ADMIN(user, { can }) {
-                can('manage', 'all')
+                can('manage', 'all');
             },
             EDITOR(user, { can }) {
-                can('create', 'Post')
-                can('read', 'Post')
-                can('update', 'Post')
+                can('create', 'Post');
+                can('read', 'Post');
+                can('update', 'Post');
             },
             WRITER(user, { can }) {
-                can('create', 'Post')
-                can('read', 'Post')
-                can('update', 'Post')
+                can('create', 'Post');
+                can('read', 'Post', { authorId: user.id });
+                can('update', 'Post', { authorId: user.id });
             },
             READER(user, { can }) {
-                can('read', 'Post')
+                can('read', 'Post', { published: true });
             },
-        }
+        };
 
-        @Injectable({scope: Scope.REQUEST}) // Esse serviço vai ser gerado uma instancia por requisição
+
+        // modelo de autorização
+        // rbac - role based access control
+        // abac - attribute based access control
+
+
+        @Injectable({ scope: Scope.REQUEST }) // Esse serviço vai ser gerado uma instancia por requisição
         export class CaslAbilityService {
 
             ability: AppAbility
 
             createForUser(user: User) {
+
                 const builder = new AbilityBuilder<AppAbility>(createPrismaAbility)
+
                 rolePermissionsMap[user.role](user, builder)
+
                 this.ability = builder.build()
+
                 return this.ability
             }
-        }
+}
+
 
     24.2 - exporte e torne o serive global no arquivo casl.module.ts
         import { Global, Module } from '@nestjs/common';
@@ -457,20 +477,81 @@ ex: nest g controller users -> src/users/users.controller.ts
             request.user = user // em baixo dessa linha
             this.abilityService.createForUser(user) // cria as permissoes do usuario no momento da autenticação
 
-    25.2 no arquvi user.service.ts adicione os trechos
-            constructor(
-            private prismaService: PrismaService, 
-            private abilityService: CaslAbilityService // importa a instancia criada para o usuario no auth.guard.ts
-        ) {}
-        //....
-        create(createUserDto: CreateUserDto) {
-            const ability = this.abilityService.ability
-        
-            if(!ability.can('create', 'User')){
-                throw new Error('Anauthorized')
+    25.2 no arquivo user.service.ts adicione os codigo
+            import { ForbiddenException, Injectable } from '@nestjs/common';
+            import { CreateUserDto } from './dto/create-user.dto.js';
+            import { UpdateUserDto } from './dto/update-user.dto.js';
+            import { PrismaService } from '../prisma/prisma.service.js';
+            import * as bcrypt from 'bcrypt'
+            import { CaslAbilityService } from '../casl/casl-ability/casl-ability.service.js';
+
+            @Injectable()
+            export class UsersService {
+
+                constructor(
+                    private prismaService: PrismaService,
+                    private abilityService: CaslAbilityService // importa a instancia criada para o usuario no auth.guard.ts
+                ) { }
+
+                create(createUserDto: CreateUserDto) {
+                    return this.prismaService.user.create({
+                        data: {
+                            name: createUserDto.name,
+                            email: createUserDto.email,
+                            password: bcrypt.hashSync(createUserDto.password, 10),
+                            role: createUserDto.role,
+                        },
+                    });
+                }
+
+                findAll() {
+                    const ability = this.abilityService.ability
+
+                    if (!ability.can('read', 'User')) {
+                        throw new ForbiddenException('Anauthorized')
+                    }
+                    return this.prismaService.user.findMany();
+                }
+
+                findOne(id: string) {
+                    const ability = this.abilityService.ability
+
+                    if (!ability.can('read', 'User')) {
+                        throw new ForbiddenException('Anauthorized')
+                    }
+
+                    return this.prismaService.user.findUnique({
+                        where: { id },
+                    });
+                }
+
+                update(id: string, updateUserDto: UpdateUserDto) {
+                    const ability = this.abilityService.ability
+
+                    if (!ability.can('update', 'User')) {
+                        throw new ForbiddenException('Anauthorized')
+                    }
+
+                    return this.prismaService.user.update({
+                        where: { id },
+                        data: updateUserDto,
+                    });
+                }
+
+                remove(id: string) {
+                    const ability = this.abilityService.ability
+
+                    if (!ability.can('delete', 'User')) {
+                        throw new ForbiddenException('Anauthorized')
+                    }
+
+                    return this.prismaService.user.delete({
+                        where: { id },
+                    });
+                }
             }
-            ....
-        }
+
+        
 
 
 
