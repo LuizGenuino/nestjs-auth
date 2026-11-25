@@ -3,24 +3,52 @@ POST http://localhost:3000/users
 Content-Type: application/json
 
 {
-    "name": "User Reader",
-    "email": "reader@example.com",
+    "name": "User Editor",
+    "email": "editor@example.com",
     "password": "123456",
-    "role": "READER"
+    "role": "EDITOR"
 }
 
+
+
 ###
+# @name login
 POST http://localhost:3000/auth/login
 Content-Type: application/json
 
 {
-    "email": "reader@example.com",
+    "email": "admin@example.com",
     "password": "123456"
 }
 
 ###
+@token = {{login.response.body.access_token}}
+
+###
 GET http://localhost:3000/users
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtd255azk4NTAwMDA1OGNzanZpNzI3MHIiLCJyb2xlIjoiUkVBREVSIiwibmFtZSI6IlVzZXIgUmVhZGVyIiwiZW1haWwiOiJyZWFkZXJAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTUxMjA5NTcsImV4cCI6MTc5NTEyODE1N30.kbKJV7ZC6XhwcubGz9G3EjtuhkXLOYBaciGQJzxHuGE
+Authorization: Bearer {{token}}
 
 ###
 GET http://localhost:3000/users/cmwnyk985000058csjvi7270r
+
+
+###
+POST http://localhost:3000/posts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+{
+    "title": "My First Post",
+    "content": "This is my first post",
+    "published": true
+}
+
+###
+GET http://localhost:3000/posts
+Authorization: Bearer {{token}}
+
+
+DELETE http://localhost:3000/posts
+Authorization: Bearer {{token}}
+
