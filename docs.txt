@@ -1,5 +1,7 @@
 curso: https://www.youtube.com/watch?v=_ZyX4Vcofek
 
+arquitetura de role and permissions usando o CASL js nas rotas
+
 
 nest generate (ou apenas g) resource [name ou vazio] - cria um modulo completo com dto, entidade, controller, module e service e ja adiciona no main.ts para funcioar a rota automaticamente
 
@@ -376,6 +378,62 @@ ex: nest g controller users -> src/users/users.controller.ts
 
 22 - criar o modulo de posts
     22.1 - comando: nest g resource posts 
+
+
+23 - Adiciona o casl para permissoes nas rotas
+    23.1 - npm install @casl/prisma @casl/ability
+    23.2 - nest g module casl   
+    23.3 - nest g service casl/casl-ability   
+
+24 - configura o casl-ability.service.ts
+    24.1 - adiciona o codigo
+        import { Injectable } from '@nestjs/common';
+        import { Post, Role, User } from '../../generated/prisma/client.js';
+        import { Ability, AbilityBuilder } from '@casl/ability';
+        import { createPrismaAbility, Subjects } from '@casl/prisma';
+
+        export type PermActions = 'manage' | 'create' | 'read' | 'update' | 'delete';
+
+        export type PermissionResource = Subjects<{ User: User; Post: Post }> | 'all';
+
+        export type AppAbility = Ability<[PermActions, PermissionResource]>
+
+        export type DefinePermissions = (
+            user: User,
+            builder: AbilityBuilder<AppAbility>
+        ) => void
+
+        const rolePermissionsMap: Record<Role, DefinePermissions> = {
+            ADMIN(user, { can }) {
+                can('manage', 'all')
+            },
+            EDITOR(user, { can }) {
+                can('create', 'Post')
+                can('read', 'Post')
+                can('update', 'Post')
+            },
+            WRITER(user, { can }) {
+                can('create', 'Post')
+                can('read', 'Post')
+                can('update', 'Post')
+            },
+            READER(user, { can }) {
+                can('read', 'Post')
+            },
+        }
+
+        @Injectable()
+        export class CaslAbilityService {
+
+            ability: AppAbility
+
+            createForUser(user: User) {
+                const builder = new AbilityBuilder<AppAbility>(createPrismaAbility)
+                rolePermissionsMap[user.role](user, builder)
+                this.ability = builder.build()
+                return this.ability
+            }
+        }
 
 
 
