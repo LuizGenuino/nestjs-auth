@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Scope } from '@nestjs/common';
 import { Post, Role, User } from '../../generated/prisma/client.js';
 import { Ability, AbilityBuilder } from '@casl/ability';
 import { createPrismaAbility, Subjects } from '@casl/prisma';
@@ -33,7 +33,7 @@ const rolePermissionsMap: Record<Role, DefinePermissions> = {
     },
 }
 
-@Injectable()
+@Injectable({scope: Scope.REQUEST}) // Esse serviço vai ser gerado uma instancia por requisição
 export class CaslAbilityService {
 
     ability: AppAbility

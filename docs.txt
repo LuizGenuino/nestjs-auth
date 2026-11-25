@@ -385,9 +385,9 @@ ex: nest g controller users -> src/users/users.controller.ts
     23.2 - nest g module casl   
     23.3 - nest g service casl/casl-ability   
 
-24 - configura o casl-ability.service.ts
-    24.1 - adiciona o codigo
-        import { Injectable } from '@nestjs/common';
+24 - configura o casl
+    24.1 - adiciona o codigo em casl-ability.service.ts
+        import { Injectable, Scope } from '@nestjs/common';
         import { Post, Role, User } from '../../generated/prisma/client.js';
         import { Ability, AbilityBuilder } from '@casl/ability';
         import { createPrismaAbility, Subjects } from '@casl/prisma';
@@ -422,7 +422,7 @@ ex: nest g controller users -> src/users/users.controller.ts
             },
         }
 
-        @Injectable()
+        @Injectable({scope: Scope.REQUEST}) // Esse serviço vai ser gerado uma instancia por requisição
         export class CaslAbilityService {
 
             ability: AppAbility
@@ -434,6 +434,19 @@ ex: nest g controller users -> src/users/users.controller.ts
                 return this.ability
             }
         }
+
+    24.2 - exporte e torne o serive global no arquivo casl.module.ts
+        import { Global, Module } from '@nestjs/common';
+        import { CaslAbilityService } from './casl-ability/casl-ability.service.js';
+
+        @Global() // pode ser usado sem importar nos modulos
+        @Module({
+            providers: [CaslAbilityService],
+            exports: [CaslAbilityService] // pode ser usado outros modulos
+        })
+        export class CaslModule { }
+
+
 
 
 
