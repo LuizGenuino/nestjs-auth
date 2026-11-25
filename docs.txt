@@ -446,7 +446,31 @@ ex: nest g controller users -> src/users/users.controller.ts
         })
         export class CaslModule { }
 
+25 - crie as permissoes de acordo com a role do usuario autenticado
+    25.1 - no arquivo auth.guard.ts adicione o seguinte trecho
+                constructor(
+                    private jwtService: JwtService, 
+                    private prismaService: PrismaService,
+                    private abilityService: CaslAbilityService // adicione o item no construtor
+                ) { }
+                //....
+            request.user = user // em baixo dessa linha
+            this.abilityService.createForUser(user) // cria as permissoes do usuario no momento da autenticação
 
+    25.2 no arquvi user.service.ts adicione os trechos
+            constructor(
+            private prismaService: PrismaService, 
+            private abilityService: CaslAbilityService // importa a instancia criada para o usuario no auth.guard.ts
+        ) {}
+        //....
+        create(createUserDto: CreateUserDto) {
+            const ability = this.abilityService.ability
+        
+            if(!ability.can('create', 'User')){
+                throw new Error('Anauthorized')
+            }
+            ....
+        }
 
 
 

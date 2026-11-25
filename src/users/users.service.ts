@@ -3,43 +3,76 @@ import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import * as bcrypt from 'bcrypt'
+import { CaslAbilityService } from '../casl/casl-ability/casl-ability.service.js';
 
 @Injectable()
 export class UsersService {
 
-    constructor(private prismaService: PrismaService) {}
+    constructor(
+        private prismaService: PrismaService,
+        private abilityService: CaslAbilityService // importa a instancia criada para o usuario no auth.guard.ts
+    ) { }
 
-  create(createUserDto: CreateUserDto) {
-    return this.prismaService.user.create({
-        data: {
-            name: createUserDto.name,
-            email: createUserDto.email,
-            password: bcrypt.hashSync(createUserDto.password, 10),
-            role: createUserDto.role,
-        },
-    });
-  }
+    create(createUserDto: CreateUserDto) {
+        const ability = this.abilityService.ability
 
-  findAll() {
-    return this.prismaService.user.findMany();
-  }
+        if (!ability.can('create', 'User')) {
+            throw new Error('Anauthorized')
+        }
 
-  findOne(id: string) {
-    return this.prismaService.user.findUnique({
-      where: { id },
-    });
-  }
+        return this.prismaService.user.create({
+            data: {
+                name: createUserDto.name,
+                email: createUserDto.email,
+                password: bcrypt.hashSync(createUserDto.password, 10),
+                role: createUserDto.role,
+            },
+        });
+    }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return this.prismaService.user.update({
-      where: { id },
-      data: updateUserDto,
-    });
-  }
+    findAll() {
+        const ability = this.abilityService.ability
 
-  remove(id: string) {
-    return this.prismaService.user.delete({
-      where: { id },
-    });
-  }
+        if (!ability.can('read', 'User')) {
+            throw new Error('Anauthorized')
+        }
+        return this.prismaService.user.findMany();
+    }
+
+    findOne(id: string) {
+        const ability = this.abilityService.ability
+
+        if (!ability.can('read', 'User')) {
+            throw new Error('Anauthorized')
+        }
+
+        return this.prismaService.user.findUnique({
+            where: { id },
+        });
+    }
+
+    update(id: string, updateUserDto: UpdateUserDto) {
+        const ability = this.abilityService.ability
+
+        if (!ability.can('update', 'User')) {
+            throw new Error('Anauthorized')
+        }
+
+        return this.prismaService.user.update({
+            where: { id },
+            data: updateUserDto,
+        });
+    }
+
+    remove(id: string) {
+        const ability = this.abilityService.ability
+
+        if (!ability.can('delete', 'User')) {
+            throw new Error('Anauthorized')
+        }
+
+        return this.prismaService.user.delete({
+            where: { id },
+        });
+    }
 }
