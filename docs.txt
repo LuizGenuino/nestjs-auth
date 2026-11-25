@@ -3,6 +3,11 @@ curso: https://www.youtube.com/watch?v=_ZyX4Vcofek
 arquitetura de role and permissions usando o CASL js nas rotas
 
 
+// modelo de autorização
+// rbac - role based access control
+// abac - attribute based access control
+// acl - action control list (s3)
+
 nest generate (ou apenas g) resource [name ou vazio] - cria um modulo completo com dto, entidade, controller, module e service e ja adiciona no main.ts para funcioar a rota automaticamente
 
 mas posso usar:
